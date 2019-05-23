@@ -88,22 +88,21 @@ function setData(hitShape,dimension)
 	currentVelocity = vehicle:getVelocity()
 	currentRotation = vehicle:getRotation() 
 
-	requiredVelocity = saves[hash]['vel']
 	requiredRotation = saves[hash]['orig_rot']
+	finalVelocity = saves[hash]['vel']
 	finalRotation = saves[hash]['rot']
+	finalPosition = saves[hash]['pos']
 	ROTATION_DURATION = saves[hash]['duration']
 
-	diffVelocity = cosDistance(requiredVelocity,currentVelocity)
 	diffRotation = rotDistance(requiredRotation,currentRotation)
 
 	outputDebugString(requiredRotation)
 	outputDebugString(currentRotation)
-	outputDebugString(string.format('%f %f',diffVelocity,diffRotation))
+	outputDebugString(string.format('%f',diffRotation))
 
-	if diffVelocity >= MIN_SIMILARITY_SPD and diffRotation >= MIN_SIMILARITY_ROT then
-		vehicle:setVelocity(requiredVelocity)
-		vehicle:setRotationBlended(finalRotation)
-		--vehicle:setAngularVelocity(saves[hash]['ang'])
+	if diffRotation >= MIN_SIMILARITY_ROT then
+		vehicle:setCollisionsEnabled(false)
+		vehicle:setRotationBlended(finalRotation,finalPosition)
 	else
 		outputDebugString('Not close enough',0,200,200,200)
 	end
@@ -130,12 +129,13 @@ function loadDataFromFile ()
 		local attrs = save:getAttributes()
 		saves[tonumber(attrs['hash'])] = {}
 		saves[tonumber(attrs['hash'])]['vel'] = Vector3(tonumber(attrs['vx']),tonumber(attrs['vy']),tonumber(attrs['vz']))
+		saves[tonumber(attrs['hash'])]['pos'] = Vector3(tonumber(attrs['px']),tonumber(attrs['py']),tonumber(attrs['pz']))
 		saves[tonumber(attrs['hash'])]['rot'] = Vector3(tonumber(attrs['rx']),tonumber(attrs['ry']),tonumber(attrs['rz']))
 		saves[tonumber(attrs['hash'])]['ang'] = Vector3(tonumber(attrs['ax']),tonumber(attrs['ay']),tonumber(attrs['az']))
 		saves[tonumber(attrs['hash'])]['orig_rot'] = Vector3(tonumber(attrs['orig_rx']),tonumber(attrs['orig_ry']),tonumber(attrs['orig_rz']))
 		saves[tonumber(attrs['hash'])]['duration'] = tonumber(attrs['duration'])
 
-		local cshape = ColShape.Sphere(attrs['px'],attrs['py'],attrs['pz'],COL_SIZE)
+		local cshape = ColShape.Sphere(attrs['orig_px'],attrs['orig_py'],attrs['orig_pz'],COL_SIZE)
 		colshapes[tonumber(attrs['hash'])] = cshape
 		table.insert(hashorder,tonumber(attrs['hash']))
 	end
@@ -155,24 +155,28 @@ function changeRotation ()
 	newMatrix.up = newMatrix.up + (targetMatrix.up-initialMatrix.up)/ROTATION_DURATION
 	newMatrix.right = newMatrix.right + (targetMatrix.right-initialMatrix.right)/ROTATION_DURATION
 	newMatrix.forward = newMatrix.forward + (targetMatrix.forward-initialMatrix.forward)/ROTATION_DURATION
+	newMatrix.position = newMatrix.position + (targetMatrix.position-newMatrix.position)/ROTATION_DURATION--*((1/ROTATION_DURATION)*i*i)
+
 
 	currentVehicle:setMatrix(newMatrix)
 	i = i+1
 	if i == ROTATION_DURATION then
 		removeEventHandler('onClientRender',root,changeRotation)
-		setAngularVelocity2()
+		setFinalVelocity()
 		outputDebugString(string.format('Corrected jump %d',getTickCount()),0,200,200,200)		
 	end
 end
 
-function setAngularVelocity2()
+function setFinalVelocity()
+	currentVehicle:setVelocity(saves[hash]['vel'])
 	currentVehicle:setAngularVelocity(saves[hash]['ang'])
+	currentVehicle:setCollisionsEnabled(true)
 end
 
-function Vehicle:setRotationBlended (rotation)
+function Vehicle:setRotationBlended (rotation,position)
 
 	initialMatrix = self.matrix
-	targetMatrix = Matrix(Vector3(0,0,0),rotation)
+	targetMatrix = Matrix(position,rotation)
 	currentVehicle = self
 	i = 0
 	addEventHandler('onClientRender',root,changeRotation)
