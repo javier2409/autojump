@@ -1,0 +1,6 @@
+<meta>
+	<info type="misc" name="AutoJump" author="Gus el rikolino" description="Te hace saltar rikolinamente" version="1" />
+	<script type="client" src="client.lua" />
+	<script type="client" src="decancer.lua" />
+	<oop>true</oop>
+</meta>
