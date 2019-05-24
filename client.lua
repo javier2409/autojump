@@ -121,6 +121,7 @@ function setData(hitShape,dimension)
 		outputDebugString(splineZ.p)
 		outputDebugString(vehicle:getPosition():getZ())
 		vehicle:setCollisionsEnabled(false)
+		vehicle:setAngularVelocity(Vector3(0,0,0))
 		vehicle:setRotationBlended(finalRotation,finalPosition)
 	else
 		outputDebugString('Not close enough',0,200,200,200)

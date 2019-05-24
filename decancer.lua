@@ -1,3 +1,5 @@
+markers = {}
+
 
 function togglerecording ()
 	RECORDING = not RECORDING
@@ -11,11 +13,11 @@ addCommandHandler('rj',togglerecording)
 
 function markerHit (player,dimension)
 	if player ~= localPlayer then return end
-	if cosDistance(Vector3(source:getColor()),MARKER_COLOR) < 0.99 then 
-		return 
+	if cosDistance(Vector3(source:getColor()),MARKER_COLOR) < 0.99 then
+		return
 	end
-	if (not RECORDING) or DISABLED then 
-		return 
+	if (not RECORDING) or DISABLED then
+		return
 	end
 	saveData(source:getPosition())
 end
@@ -64,7 +66,7 @@ function saveRotationHelper ()
 		node:setAttribute('vz',saves[hash]['vel']:getZ())
 		node:setAttribute('ax',saves[hash]['ang']:getX())
 		node:setAttribute('ay',saves[hash]['ang']:getY())
-		node:setAttribute('az',saves[hash]['ang']:getZ())		
+		node:setAttribute('az',saves[hash]['ang']:getZ())
 		file:saveFile()
 		file:unload()
 		removeEventHandler('onClientRender',root,saveRotationHelper)
@@ -152,3 +154,20 @@ function changeRotationDuration (cname,newDuration)
 	end
 end
 addCommandHandler('smoothness',changeRotationDuration)
+
+function addMarker()
+	local pos = localPlayer:getOccupiedVehicle():getPosition()
+	marker = Marker(pos,'corona',2)
+	table.insert(markers,marker)
+end
+addCommandHandler('am',addMarker)
+function deleteMarker()
+
+	if #markers == 0 then
+		outputChatBox("You don't have any markers")
+		return
+	end
+	marker = table.remove(markers)
+	marker:destroy()
+end
+addCommandHandler('dm',deleteMarker)
