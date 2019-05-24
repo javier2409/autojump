@@ -9,8 +9,8 @@ Similarity needed between saved speed/rotation and player's speed/rotation
 
 Values greater than 0.97 are advisable to make the effect less noticeable
 ]]
-MIN_SIMILARITY_SPD = 0.96 
-MIN_SIMILARITY_ROT = 0.96 
+MIN_SIMILARITY_SPD = 0.96
+MIN_SIMILARITY_ROT = 0.96
 
 -- Marker colors for recording jumps
 MARKER_COLOR = Vector3(0,0,255)
@@ -60,14 +60,14 @@ end
 
 function setData(hitShape,dimension)
 
-	if source ~= localPlayer:getOccupiedVehicle() then 
-		return 
+	if source ~= localPlayer:getOccupiedVehicle() then
+		return
 	end
 
 	vehicle = localPlayer:getOccupiedVehicle()
 
-	if RECORDING then 
-		return 
+	if RECORDING then
+		return
 	end
 
 	if DISABLE_LOAD then return end
@@ -75,8 +75,8 @@ function setData(hitShape,dimension)
 	local hitPosTest = Vector3(getElementPosition(hitShape))
 	local hashTest = hashVector(hitPosTest)
 
-	if not saves[hashTest] then 
-		return 
+	if not saves[hashTest] then
+		return
 	end
 
 	DISABLE_LOAD = true
@@ -86,7 +86,7 @@ function setData(hitShape,dimension)
 	hash = hashVector(hitPos)
 
 	currentVelocity = vehicle:getVelocity()
-	currentRotation = vehicle:getRotation() 
+	currentRotation = vehicle:getRotation()
 
 	requiredRotation = saves[hash]['orig_rot']
 	finalVelocity = saves[hash]['vel']
@@ -101,6 +101,25 @@ function setData(hitShape,dimension)
 	outputDebugString(string.format('%f',diffRotation))
 
 	if diffRotation >= MIN_SIMILARITY_ROT then
+		splineX = Spline(ROTATION_DURATION,
+											vehicle:getPosition():getX(),
+											finalPosition:getX(),
+											currentVelocity:getX(),
+											finalVelocity:getX())
+
+		splineY = Spline(ROTATION_DURATION,
+											vehicle:getPosition():getY(),
+											finalPosition:getY(),
+											currentVelocity:getY(),
+											finalVelocity:getY())
+
+		splineZ = Spline(ROTATION_DURATION,
+											vehicle:getPosition():getZ(),
+											finalPosition:getZ(),
+											currentVelocity:getZ(),
+											finalVelocity:getZ())
+		outputDebugString(splineZ.p)
+		outputDebugString(vehicle:getPosition():getZ())
 		vehicle:setCollisionsEnabled(false)
 		vehicle:setRotationBlended(finalRotation,finalPosition)
 	else
@@ -112,6 +131,43 @@ addEventHandler('onClientElementColShapeHit',root,setData)
 function enable( )
 	DISABLED = false
 	DISABLE_LOAD = false
+end
+
+
+function getMatrixFromRot(vec)
+	return Matrix(Vector3(0,0,0),vec)
+end
+
+function changeRotation ()
+	newMatrix = Matrix()
+	newMatrix = currentVehicle:getMatrix()
+	newMatrix.up = newMatrix.up + (targetMatrix.up-initialMatrix.up)/ROTATION_DURATION
+	newMatrix.right = newMatrix.right + (targetMatrix.right-initialMatrix.right)/ROTATION_DURATION
+	newMatrix.forward = newMatrix.forward + (targetMatrix.forward-initialMatrix.forward)/ROTATION_DURATION
+	newMatrix.position = Vector3(splineX:get(i),splineY:get(i),splineZ:get(i))
+
+	currentVehicle:setMatrix(newMatrix)
+	i = i+1
+	if i == ROTATION_DURATION then
+		removeEventHandler('onClientRender',root,changeRotation)
+		setFinalVelocity()
+		outputDebugString(string.format('Corrected jump %d',getTickCount()),0,200,200,200)
+	end
+end
+
+function setFinalVelocity()
+	currentVehicle:setVelocity(saves[hash]['vel'])
+	currentVehicle:setAngularVelocity(saves[hash]['ang'])
+	currentVehicle:setCollisionsEnabled(true)
+end
+
+function Vehicle:setRotationBlended (rotation,position)
+
+	initialMatrix = self.matrix
+	targetMatrix = Matrix(position,rotation)
+	currentVehicle = self
+	i = 0
+	addEventHandler('onClientRender',root,changeRotation)
 end
 
 function loadDataFromFile ()
@@ -144,40 +200,3 @@ function loadDataFromFile ()
 	file:unload()
 end
 addEventHandler('onClientResourceStart',resourceRoot,loadDataFromFile)
-
-function getMatrixFromRot(vec)
-	return Matrix(Vector3(0,0,0),vec)
-end
-
-function changeRotation ()
-	newMatrix = Matrix()
-	newMatrix = currentVehicle:getMatrix()
-	newMatrix.up = newMatrix.up + (targetMatrix.up-initialMatrix.up)/ROTATION_DURATION
-	newMatrix.right = newMatrix.right + (targetMatrix.right-initialMatrix.right)/ROTATION_DURATION
-	newMatrix.forward = newMatrix.forward + (targetMatrix.forward-initialMatrix.forward)/ROTATION_DURATION
-	newMatrix.position = newMatrix.position + (targetMatrix.position-newMatrix.position)/ROTATION_DURATION--*((1/ROTATION_DURATION)*i*i)
-
-
-	currentVehicle:setMatrix(newMatrix)
-	i = i+1
-	if i == ROTATION_DURATION then
-		removeEventHandler('onClientRender',root,changeRotation)
-		setFinalVelocity()
-		outputDebugString(string.format('Corrected jump %d',getTickCount()),0,200,200,200)		
-	end
-end
-
-function setFinalVelocity()
-	currentVehicle:setVelocity(saves[hash]['vel'])
-	currentVehicle:setAngularVelocity(saves[hash]['ang'])
-	currentVehicle:setCollisionsEnabled(true)
-end
-
-function Vehicle:setRotationBlended (rotation,position)
-
-	initialMatrix = self.matrix
-	targetMatrix = Matrix(position,rotation)
-	currentVehicle = self
-	i = 0
-	addEventHandler('onClientRender',root,changeRotation)
-end
