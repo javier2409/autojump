@@ -22,4 +22,6 @@ function CubicSpline:get(x)
 end
 
 
-function Spline (start,final,fstart,fend,fdstart,fdend)
+function Spline (final,fstart,fend,fdstart,fdend)
+  return CubicSpline:new(final,fstart,fend,fdstart,fdend)
+end
