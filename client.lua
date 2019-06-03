@@ -88,7 +88,7 @@ function setData(localHitShape,dimension)
 							finalPosition:getZ(),
 							currentVelocity:getZ(),
 							finalVelocity:getZ())
-		vehicle:setCollisionsEnabled(false)
+		--vehicle:setCollisionsEnabled(false)
 		vehicle:setAngularVelocity(Vector3(0,0,0))
 		setRotationBlended(vehicle,finalRotation,finalPosition)
 	else
@@ -141,30 +141,27 @@ end
 
 function loadDataFromFile ()
 
-	outputDebugString(getThisResource().name)
-
 	autojumps = getElementsByType('autojumpstart',resourceRoot)
 	for i,autojump in ipairs(autojumps) do
 		outputDebugString(i)
-		--if type(autojump:getData('end')) == 'string' then 
-		--This 'if' is to avoid conflict with editor test mode, because if editor is running
-		--there will be duplicated autojumps, the ones created by the editor while editing
-		--and the ones created by the actual map that is being tested.
-		--The map saves everything as a string, not actual elements (like the editor) so this assures
-		--that we get only the autojumps created by the map.
-			autojumpEnd = getAutojumpEnd(autojump:getData('end'))
 
-			cshape = ColShape.Sphere(autojump:getData('posX'),autojump:getData('posY'),autojump:getData('posZ'),COL_SIZE)
-			saves[cshape] = {}
-			saves[cshape]['pos'] = Vector3(autojumpEnd:getData('posX'),autojumpEnd:getData('posY'),autojumpEnd:getData('posZ'))
-			saves[cshape]['rot'] = Vector3(autojumpEnd:getData('rotX'),autojumpEnd:getData('rotY'),autojumpEnd:getData('rotZ'))
-			saves[cshape]['vel'] = Matrix(saves[cshape]['pos'],saves[cshape]['rot']).forward * tonumber(autojump:getData('speed'))
-			outputDebugString(saves[cshape]['rot'])
-			saves[cshape]['orig_rot'] = Vector3(autojump:getData('rotX'),autojump:getData('rotY'),autojump:getData('rotZ'))
-			outputDebugString(saves[cshape]['orig_rot'])
-			saves[cshape]['duration'] = tonumber(autojump:getData('duration'))
-			saves[cshape]['precision'] = tonumber(autojump:getData('precision'))
-		--end
+		autojumpEnd = getAutojumpEnd(autojump:getData('end'))
+		outputDebugString(type(autojumpEnd:getData('posX')))
+		cshape = ColShape.Sphere(autojump:getData('posX'),autojump:getData('posY'),autojump:getData('posZ'),COL_SIZE)
+		saves[cshape] = {}
+		saves[cshape]['pos'] = Vector3(autojumpEnd:getData('posX'),autojumpEnd:getData('posY'),autojumpEnd:getData('posZ'))
+		saves[cshape]['rot'] = Vector3(autojumpEnd:getData('rotX'),autojumpEnd:getData('rotY'),autojumpEnd:getData('rotZ'))
+		
+		dummyVehicle = Vehicle(411,saves[cshape]['pos'],saves[cshape]['rot'])
+		saves[cshape]['vel'] = dummyVehicle.matrix.forward * tonumber(autojump:getData('speed'))
+		dummyVehicle:destroy()
+
+		outputDebugString(saves[cshape]['rot'])
+		saves[cshape]['orig_rot'] = Vector3(autojump:getData('rotX'),autojump:getData('rotY'),autojump:getData('rotZ'))
+		outputDebugString(saves[cshape]['orig_rot'])
+		saves[cshape]['duration'] = tonumber(autojump:getData('duration'))
+		saves[cshape]['precision'] = tonumber(autojump:getData('precision'))
+
 	end
 end
 addEventHandler('onClientResourceStart',resourceRoot,loadDataFromFile)
@@ -218,3 +215,4 @@ end
 function Spline (final,fstart,fend,fdstart,fdend)
   return CubicSpline.new(final,fstart,fend,fdstart,fdend)
 end
+

@@ -1,22 +1,13 @@
 <def name="Autojumps">
-	<element name="autojumpstart" friendlyname="Autojump Start">
-		<vehicle editorOnly='true' model="!vehicle!" rotation="!rotation!"/>
-		<data name="vehicle" type="vehicleID" default="411" />
-		<data name="color" type="vehiclecolor" required="false" />
+	<element name="vehicle" friendlyname="Autojump" shortcut='type'>
+		<data name="model" type="vehicleID" default="411" />
+		<data name="position" type="coord3d" default="0,0,0" />
+		<data name="rotation" type="coord3d" default="0,0,0" />
+		<data name='type' type='selection:start,end' />
 		<data name="end" type="element:autojumpend" required ="false" />
 		<data name="precision" type="number" default="0" required="false" />
-		<data name="rotation" type="coord3d" default="0,0,0" />
-		<data name="position" type="coord3d" default="0,0,0" />
-		<data name="duration" type="integer" default="2" />
+		<data name="duration" type="number" default="2" />
 		<data name="speed" type="number" default="1" required ="false" />
-
-	</element>
-	<element name="autojumpend" friendlyname="Autojump End">
-		<vehicle editorOnly='true' model="!vehicle!" rotation="!rotation!"/>
-		<data name="vehicle" type="vehicleID" default="411" />
-		<data name="color" type="vehiclecolor" required="false" />
-		<data name="rotation" type="coord3d" default="0,0,0" />
-		<data name="position" type="coord3d" default="0,0,0" />
 
 	</element>
 </def>
