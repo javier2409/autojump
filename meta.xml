@@ -1,7 +1,6 @@
 <meta>
-	<info type="misc" name="AutoJump" author="Gus el rikolino" description="Te hace saltar rikolinamente" version="1" />
+	<info type="misc" name="AutoJump" author="Gus el rikolino" description="Te hace saltar rikolinamente" version="1" edf:definition="editor.edf" />
 	<script type="client" src="client.lua" />
-	<script type="client" src="decancer.lua" />
-	<script type="client" src="spline.lua" />
+	<script type="server" src="addscript.lua" />
 	<oop>true</oop>
 </meta>

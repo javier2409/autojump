@@ -1,43 +1,14 @@
 
 ----------------------------------------------SETTINGS-----------------------------------------------------------------
---Edit this settings according to your criteria
-
---[[
-Similarity needed between saved speed/rotation and player's speed/rotation
-0 means the jump correction will be applied ALWAYS
-1 means they need to be exactly equal (pointless)
-
-Values greater than 0.97 are advisable to make the effect less noticeable
-]]
-MIN_SIMILARITY_SPD = 0.96
-MIN_SIMILARITY_ROT = 0.96
-
--- Marker colors for recording jumps
-MARKER_COLOR = Vector3(0,0,255)
-
 -- Size of the hitboxes for jumps, smaller values mean a smaller area in which the effect will be aplied for each jump
 COL_SIZE = 1.6
-
--- In case you want to change the jumps file name (change in meta.xml also)
-FILENAME = 'jumps.xml'
-
-
--- The script rotates the car smoothly, this parameter indicates how many frames will it take to rotate the car
--- 1 means instant rotation
--- Ideally this should be 1 but the effect is more noticeable that way
--- (This can be changed dynamically with 'smoothness' command)
--- DO NOT SET TO ZERO OR YOUR PC WILL EXPLODE
-ROTATION_DURATION = 15
 -----------------------------------DO NOT CHANGE VALUES BELOW HERE-----------------------------------------------------
 
 RECORDING = false
 DISABLED = false
 DISABLE_LOAD = false
-file = nil
 saves = {}
-colshapes = {}
-hashorder = {}
-hash = nil
+hitShape = nil
 
 function hashVector(vector)
 	x = math.floor(vector:getX())
@@ -58,13 +29,11 @@ function rotDistance (vector1,vector2)
 end
 
 
-function setData(hitShape,dimension)
+function setData(localHitShape,dimension)
 
 	if source ~= localPlayer:getOccupiedVehicle() then
 		return
 	end
-
-	vehicle = localPlayer:getOccupiedVehicle()
 
 	if RECORDING then
 		return
@@ -72,27 +41,28 @@ function setData(hitShape,dimension)
 
 	if DISABLE_LOAD then return end
 
-	local hitPosTest = Vector3(getElementPosition(hitShape))
-	local hashTest = hashVector(hitPosTest)
-
-	if not saves[hashTest] then
+	if not saves[localHitShape] then
 		return
 	end
 
 	DISABLE_LOAD = true
 	Timer(enable,200,1)
 
+	hitShape = localHitShape
+
+	vehicle = localPlayer:getOccupiedVehicle()
 	local hitPos = Vector3(getElementPosition(hitShape))
-	hash = hashVector(hitPos)
 
 	currentVelocity = vehicle:getVelocity()
 	currentRotation = vehicle:getRotation()
 
-	requiredRotation = saves[hash]['orig_rot']
-	finalVelocity = saves[hash]['vel']
-	finalRotation = saves[hash]['rot']
-	finalPosition = saves[hash]['pos']
-	ROTATION_DURATION = saves[hash]['duration']
+	requiredRotation = saves[hitShape]['orig_rot']
+	finalVelocity = saves[hitShape]['vel']
+	finalRotation = saves[hitShape]['rot']
+	finalPosition = saves[hitShape]['pos']
+	ROTATION_DURATION = math.floor(getCurrentFPS()*saves[hitShape]['duration'])
+
+	outputDebugString(string.format('Duration: %d frames',ROTATION_DURATION))
 
 	diffRotation = rotDistance(requiredRotation,currentRotation)
 
@@ -100,29 +70,27 @@ function setData(hitShape,dimension)
 	outputDebugString(currentRotation)
 	outputDebugString(string.format('%f',diffRotation))
 
-	if diffRotation >= MIN_SIMILARITY_ROT then
+	if diffRotation >= (2*saves[hitShape]['precision'] - 1)  then
 		splineX = Spline(ROTATION_DURATION,
-											vehicle:getPosition():getX(),
-											finalPosition:getX(),
-											currentVelocity:getX(),
-											finalVelocity:getX())
+							vehicle:getPosition():getX(),
+							finalPosition:getX(),
+							currentVelocity:getX(),
+							finalVelocity:getX())
 
 		splineY = Spline(ROTATION_DURATION,
-											vehicle:getPosition():getY(),
-											finalPosition:getY(),
-											currentVelocity:getY(),
-											finalVelocity:getY())
+							vehicle:getPosition():getY(),
+							finalPosition:getY(),
+							currentVelocity:getY(),
+							finalVelocity:getY())
 
 		splineZ = Spline(ROTATION_DURATION,
-											vehicle:getPosition():getZ(),
-											finalPosition:getZ(),
-											currentVelocity:getZ(),
-											finalVelocity:getZ())
-		outputDebugString(splineZ.p)
-		outputDebugString(vehicle:getPosition():getZ())
+							vehicle:getPosition():getZ(),
+							finalPosition:getZ(),
+							currentVelocity:getZ(),
+							finalVelocity:getZ())
 		vehicle:setCollisionsEnabled(false)
 		vehicle:setAngularVelocity(Vector3(0,0,0))
-		vehicle:setRotationBlended(finalRotation,finalPosition)
+		setRotationBlended(vehicle,finalRotation,finalPosition)
 	else
 		outputDebugString('Not close enough',0,200,200,200)
 	end
@@ -151,53 +119,102 @@ function changeRotation ()
 	i = i+1
 	if i == ROTATION_DURATION then
 		removeEventHandler('onClientRender',root,changeRotation)
+		currentVehicle:setCollisionsEnabled(true)
 		setFinalVelocity()
 		outputDebugString(string.format('Corrected jump %d',getTickCount()),0,200,200,200)
 	end
 end
 
 function setFinalVelocity()
-	currentVehicle:setVelocity(saves[hash]['vel'])
-	currentVehicle:setAngularVelocity(saves[hash]['ang'])
-	currentVehicle:setCollisionsEnabled(true)
+	currentVehicle:setVelocity(saves[hitShape]['vel'])
+	--currentVehicle:setAngularVelocity(saves[hash]['ang'])
 end
 
-function Vehicle:setRotationBlended (rotation,position)
+function setRotationBlended (vehicle,rotation,position)
 
-	initialMatrix = self.matrix
+	initialMatrix = vehicle.matrix
 	targetMatrix = Matrix(position,rotation)
-	currentVehicle = self
+	currentVehicle = vehicle
 	i = 0
 	addEventHandler('onClientRender',root,changeRotation)
 end
 
 function loadDataFromFile ()
-	file = XML.load(FILENAME)
 
-	if not file then
-		file = XML(FILENAME,'jumps')
-		file:saveFile()
-		file:unload()
-		return 0
+	outputDebugString(getThisResource().name)
+
+	autojumps = getElementsByType('autojumpstart',resourceRoot)
+	for i,autojump in ipairs(autojumps) do
+		outputDebugString(i)
+		--if type(autojump:getData('end')) == 'string' then 
+		--This 'if' is to avoid conflict with editor test mode, because if editor is running
+		--there will be duplicated autojumps, the ones created by the editor while editing
+		--and the ones created by the actual map that is being tested.
+		--The map saves everything as a string, not actual elements (like the editor) so this assures
+		--that we get only the autojumps created by the map.
+			autojumpEnd = getAutojumpEnd(autojump:getData('end'))
+
+			cshape = ColShape.Sphere(autojump:getData('posX'),autojump:getData('posY'),autojump:getData('posZ'),COL_SIZE)
+			saves[cshape] = {}
+			saves[cshape]['pos'] = Vector3(autojumpEnd:getData('posX'),autojumpEnd:getData('posY'),autojumpEnd:getData('posZ'))
+			saves[cshape]['rot'] = Vector3(autojumpEnd:getData('rotX'),autojumpEnd:getData('rotY'),autojumpEnd:getData('rotZ'))
+			saves[cshape]['vel'] = Matrix(saves[cshape]['pos'],saves[cshape]['rot']).forward * tonumber(autojump:getData('speed'))
+			outputDebugString(saves[cshape]['rot'])
+			saves[cshape]['orig_rot'] = Vector3(autojump:getData('rotX'),autojump:getData('rotY'),autojump:getData('rotZ'))
+			outputDebugString(saves[cshape]['orig_rot'])
+			saves[cshape]['duration'] = tonumber(autojump:getData('duration'))
+			saves[cshape]['precision'] = tonumber(autojump:getData('precision'))
+		--end
 	end
-
-	saves = file:getChildren()
-	for i,save in ipairs(saves) do
-		local attrs = save:getAttributes()
-		saves[tonumber(attrs['hash'])] = {}
-		saves[tonumber(attrs['hash'])]['vel'] = Vector3(tonumber(attrs['vx']),tonumber(attrs['vy']),tonumber(attrs['vz']))
-		saves[tonumber(attrs['hash'])]['pos'] = Vector3(tonumber(attrs['px']),tonumber(attrs['py']),tonumber(attrs['pz']))
-		saves[tonumber(attrs['hash'])]['rot'] = Vector3(tonumber(attrs['rx']),tonumber(attrs['ry']),tonumber(attrs['rz']))
-		saves[tonumber(attrs['hash'])]['ang'] = Vector3(tonumber(attrs['ax']),tonumber(attrs['ay']),tonumber(attrs['az']))
-		saves[tonumber(attrs['hash'])]['orig_rot'] = Vector3(tonumber(attrs['orig_rx']),tonumber(attrs['orig_ry']),tonumber(attrs['orig_rz']))
-		saves[tonumber(attrs['hash'])]['duration'] = tonumber(attrs['duration'])
-
-		local cshape = ColShape.Sphere(attrs['orig_px'],attrs['orig_py'],attrs['orig_pz'],COL_SIZE)
-		colshapes[tonumber(attrs['hash'])] = cshape
-		table.insert(hashorder,tonumber(attrs['hash']))
-	end
-
-	file:saveFile()
-	file:unload()
 end
 addEventHandler('onClientResourceStart',resourceRoot,loadDataFromFile)
+
+function getAutojumpEnd(name)
+	autoends = getElementsByType('autojumpend',resourceRoot)
+	for i,autojump in ipairs(autoends) do
+		if autojump:getData('id') == name then
+			return autojump
+		end
+	end
+end
+
+-------------------------------FPS UTILITY FUNCTION------------------------------------
+local fps = false
+function getCurrentFPS() -- Setup the useful function
+    return fps
+end
+
+local function updateFPS(msSinceLastFrame)
+    -- FPS are the frames per second, so count the frames rendered per milisecond using frame delta time and then convert that to frames per second.
+    fps = (1 / msSinceLastFrame) * 1000
+end
+addEventHandler("onClientPreRender", root, updateFPS)
+
+
+-----------------------------------CUBIC SPLINE-----------------------------------------
+CubicSpline = {}
+CubicSpline.__index = CubicSpline
+
+function CubicSpline.new (final,fstart,fend,fdstart,fdend)
+   local self = setmetatable({},CubicSpline)
+   self.t = final or 0
+   self.p = fstart or 0
+   self.q = fend or 0
+   self.r = fdstart or 0
+   self.s = fdend or 0;
+   return self
+end
+
+function CubicSpline:get(x)
+  local a = self.p
+  local b = self.r
+  local c = (3*((self.q-self.p)/(self.t*self.t))) - ((self.s+(2*self.r))/self.t)
+  local d = ((self.s+self.r)/(self.t*self.t)) - (2*((self.q-self.p)/(self.t*self.t*self.t)))
+
+  return (a+(b*x)+(c*x*x)+(d*x*x*x))
+end
+
+
+function Spline (final,fstart,fend,fdstart,fdend)
+  return CubicSpline.new(final,fstart,fend,fdstart,fdend)
+end
