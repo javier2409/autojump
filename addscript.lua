@@ -1,22 +1,27 @@
-function addScriptToMap(player,command,mapname)
+function addScriptToMap(mapname)
 
-	map = getResourceFromName(mapname)
+	map = Resource.getFromName(mapname)
 	if not map then
 		outputChatBox(string.format('There is no map with name: %s',mapname))
 		return
 	end
 
 	local thisresourcename = getThisResource():getName()
-	local admingroup = ACLGroup.get('Admin')
+	local admingroup = ACLGroup.get('MapEditor')
 	local requiredobject = string.format('resource.%s',thisresourcename)
 	if not admingroup:doesContainObject(requiredobject) then
-		outputChatBox(string.format("Resource '%s' does not have Admin rights, files could not be copied",thisresourcename))
+		outputChatBox(string.format("Resource '%s' does not have MapEditor rights, autojump files could not be copied",thisresourcename))
 		return
 	end
 
 
+	if not Resource.getFromName('autojump') then
+		outputChatBox('Resource name must be "autojump", do not change it!')
+		return
+	end
+
 	local destination = string.format(':%s/autojump.lua',mapname)
-	fileCopy('client.lua',destination,true)
+	fileCopy(':autojump/client.lua',destination,true)
 	local meta = XML.load(string.format(':%s/meta.xml',mapname))
 	local editorMeta = XML.load(':editor_test/meta.xml')
 
@@ -24,6 +29,7 @@ function addScriptToMap(player,command,mapname)
 	for i,node in ipairs(metaNodes) do
 		if node:getName() == 'script' then
 			if node:getAttribute('src') == 'autojump.lua' then
+				outputChatBox('Script updated successfully')
 				return 
 			end
 		end
@@ -50,4 +56,4 @@ function addScriptToMap(player,command,mapname)
 
 	outputChatBox(string.format('Sucessfully added autojump script to map: %s',mapname))
 end
-addCommandHandler('addscript',addScriptToMap)
+addEventHandler('saveResource',root,addScriptToMap)
