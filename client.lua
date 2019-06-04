@@ -4,8 +4,6 @@
 COL_SIZE = 1.6
 -----------------------------------DO NOT CHANGE VALUES BELOW HERE-----------------------------------------------------
 
-RECORDING = false
-DISABLED = false
 DISABLE_LOAD = false
 saves = {}
 hitShape = nil
@@ -32,10 +30,6 @@ end
 function setData(localHitShape,dimension)
 
 	if source ~= localPlayer:getOccupiedVehicle() then
-		return
-	end
-
-	if RECORDING then
 		return
 	end
 
@@ -98,7 +92,6 @@ end
 addEventHandler('onClientElementColShapeHit',root,setData)
 
 function enable( )
-	DISABLED = false
 	DISABLE_LOAD = false
 end
 
