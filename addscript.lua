@@ -29,7 +29,7 @@ function addScriptToMap(mapname)
 	for i,node in ipairs(metaNodes) do
 		if node:getName() == 'script' then
 			if node:getAttribute('src') == 'autojump.lua' then
-				outputChatBox('Script updated successfully')
+				outputChatBox(string.format('Script updated successfully on %s',mapname))
 				return 
 			end
 		end
