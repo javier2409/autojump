@@ -6,7 +6,7 @@
 		<data name="rotation" type="coord3d" default="0,0,0" />
 		<data name="end" type="element:autojumpend" required ="false" />
 		<data name="precision" type="number" default="0" required="false" />
-		<data name="duration" type="integer" default="2" />
+		<data name="duration" type="number" default="2" />
 		<data name="speed" type="number" default="1" required ="false" />
 	</element>
 	<element name="autojumpend" friendlyname="Autojump End">
