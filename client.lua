@@ -138,52 +138,62 @@ function loadDataFromFile ()
 
 		autojumpEnd = getAutojumpEnd(autojump:getData('end'))
 
-		cshape = ColShape.Sphere(autojump:getData('posX'),
-									autojump:getData('posY'),
-									autojump:getData('posZ'),
-									COL_SIZE)
+		if autojumpEnd then
+			cshape = ColShape.Sphere(autojump:getData('posX'),
+										autojump:getData('posY'),
+										autojump:getData('posZ'),
+										COL_SIZE)
 
-		saves[cshape] = {}
-		saves[cshape]['pos'] = Vector3(autojumpEnd:getData('posX'),
-										autojumpEnd:getData('posY'),
-										autojumpEnd:getData('posZ'))
+			saves[cshape] = {}
+			saves[cshape]['pos'] = Vector3(autojumpEnd:getData('posX'),
+											autojumpEnd:getData('posY'),
+											autojumpEnd:getData('posZ'))
 
-		saves[cshape]['duration'] = tonumber(autojump:getData('duration'))
-		saves[cshape]['precision'] = tonumber(autojump:getData('precision'))
-
-
-		--[[
-		Rotations work differently in objects than in vehicles
-		the editor gives "object" formatted rotation, I need to convert it
-		to "vehicle" rotation using a 'dummy' vehicle
-		]]
-
-		dummyVehicle = Vehicle(411,0,0,0)
-		
-		dummyRotation = Vector3(autojumpEnd:getData('rotX'),
-									autojumpEnd:getData('rotY'),
-									autojumpEnd:getData('rotZ'))
-		
-		dummyRotation_o = Vector3(autojump:getData('rotX'),
-									autojump:getData('rotY'),
-									autojump:getData('rotZ'))
-		
-		-- For some reason oop version of this function seems to ignore 'ZXY' parameter
-		-- 'ZXY' means "interpret this rotation as an object rotation"
-		setElementRotation(dummyVehicle,dummyRotation,'ZXY')
-
-		-- Now I get vehicle formatted rotation because I'm getting it from a real vehicle.
-		saves[cshape]['rot'] = dummyVehicle:getRotation()
-		saves[cshape]['vel'] = dummyVehicle.matrix.forward * tonumber(autojump:getData('speed'))
-
-		setElementRotation(dummyVehicle,dummyRotation_o,'ZXY')
-
-		saves[cshape]['orig_rot'] = dummyVehicle:getRotation()
-
-		dummyVehicle:destroy()
+			saves[cshape]['duration'] = tonumber(autojump:getData('duration'))
+			saves[cshape]['precision'] = tonumber(autojump:getData('precision'))
 
 
+			--[[
+			Rotations work differently in objects than in vehicles
+			the editor gives "object" formatted rotation, I need to convert it
+			to "vehicle" rotation using a 'dummy' vehicle
+			]]
 
+			dummyVehicle = Vehicle(411,0,0,0)
+			
+			dummyRotation = Vector3(autojumpEnd:getData('rotX'),
+										autojumpEnd:getData('rotY'),
+										autojumpEnd:getData('rotZ'))
+			
+			dummyRotation_o = Vector3(autojump:getData('rotX'),
+										autojump:getData('rotY'),
+										autojump:getData('rotZ'))
+			
+			-- For some reason oop version of this function seems to ignore 'ZXY' parameter
+			-- 'ZXY' means "interpret this rotation as an object rotation"
+			setElementRotation(dummyVehicle,dummyRotation,'ZXY')
+
+			-- Now I get vehicle formatted rotation because I'm getting it from a real vehicle.
+			saves[cshape]['rot'] = dummyVehicle:getRotation()
+			saves[cshape]['vel'] = dummyVehicle.matrix.forward * tonumber(autojump:getData('speed'))
+
+			setElementRotation(dummyVehicle,dummyRotation_o,'ZXY')
+
+			saves[cshape]['orig_rot'] = dummyVehicle:getRotation()
+
+			dummyVehicle:destroy()
+
+
+			-- Omit jump if invalid parameters are passed
+			if 	(saves[cshape]['duration'] < 0.01) 	or
+				(saves[cshape]['precision'] > 1) 	or
+				(saves[cshape]['speed'] < 0) 		or
+				(saves[cshape]['precision'] < 0) 	then
+
+					table.remove(saves,cshape)
+					cshape:destroy()
+			end
+		end
 	end
 end
 addEventHandler('onClientResourceStart',resourceRoot,loadDataFromFile)
