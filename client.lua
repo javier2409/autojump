@@ -7,13 +7,11 @@ COL_SIZE = 1.6
 DISABLE_LOAD = false
 saves = {}
 hitShape = nil
+DURATION = nil
 
-function hashVector(vector)
-	x = math.floor(vector:getX())
-	y = math.floor(vector:getY())
-	z = math.floor(vector:getZ())
 
-	return math.floor((x/7)+(y/13)+(z/21))
+function getMatrixFromRot(vec)
+	return Matrix(Vector3(0,0,0),vec)
 end
 
 function cosDistance (vector1,vector2)
@@ -40,158 +38,149 @@ function setData(localHitShape,dimension)
 	end
 
 	DISABLE_LOAD = true
-	Timer(enable,200,1)
 
-	hitShape = localHitShape
+	local hitShape = localHitShape
 
-	vehicle = localPlayer:getOccupiedVehicle()
+	local vehicle = localPlayer:getOccupiedVehicle()
 	local hitPos = Vector3(getElementPosition(hitShape))
 
-	currentVelocity = vehicle:getVelocity()
-	currentRotation = vehicle:getRotation()
+	local currentVelocity = vehicle:getVelocity()
+	local currentRotation = vehicle:getRotation()
 
-	requiredRotation = saves[hitShape]['orig_rot']
-	finalVelocity = saves[hitShape]['vel']
-	finalRotation = saves[hitShape]['rot']
-	finalPosition = saves[hitShape]['pos']
-	ROTATION_DURATION = math.floor(getCurrentFPS()*saves[hitShape]['duration'])
+	local requiredRotation = saves[hitShape]['orig_rot']
+	local finalVelocity = saves[hitShape]['vel']
+	local finalRotation = saves[hitShape]['rot']
+	local finalPosition = saves[hitShape]['pos']
 
-	outputDebugString(string.format('Duration: %d frames',ROTATION_DURATION))
+	DURATION = math.floor(getCurrentFPS()*saves[hitShape]['duration'])
 
-	diffRotation = rotDistance(requiredRotation,currentRotation)
+	outputDebugString(string.format('Duration: %d frames',DURATION))
+
+	local diffRotation = rotDistance(requiredRotation,currentRotation)
 
 	outputDebugString(requiredRotation)
 	outputDebugString(currentRotation)
 	outputDebugString(string.format('%f',diffRotation))
 
 	if diffRotation >= (2*saves[hitShape]['precision'] - 1)  then
-		splineX = Spline(ROTATION_DURATION,
-							vehicle:getPosition():getX(),
-							finalPosition:getX(),
-							currentVelocity:getX(),
-							finalVelocity:getX())
-
-		splineY = Spline(ROTATION_DURATION,
-							vehicle:getPosition():getY(),
-							finalPosition:getY(),
-							currentVelocity:getY(),
-							finalVelocity:getY())
-
-		splineZ = Spline(ROTATION_DURATION,
-							vehicle:getPosition():getZ(),
-							finalPosition:getZ(),
-							currentVelocity:getZ(),
-							finalVelocity:getZ())
 		--vehicle:setCollisionsEnabled(false) CAUSES CAMERA BUGS
 		vehicle:setAngularVelocity(Vector3(0,0,0))
-		setRotationBlended(vehicle,finalRotation,finalPosition)
+		vehicle:doAutojump(currentVelocity,finalRotation,finalPosition,finalVelocity)
 	else
 		outputDebugString('Not close enough',0,200,200,200)
 	end
 end
 addEventHandler('onClientElementColShapeHit',root,setData)
 
-function enable( )
-	DISABLE_LOAD = false
-end
 
-
-function getMatrixFromRot(vec)
-	return Matrix(Vector3(0,0,0),vec)
-end
 
 function changeRotation ()
-	newMatrix = Matrix()
-	newMatrix = currentVehicle:getMatrix()
-	newMatrix.up = newMatrix.up + (targetMatrix.up-initialMatrix.up)/ROTATION_DURATION
-	newMatrix.right = newMatrix.right + (targetMatrix.right-initialMatrix.right)/ROTATION_DURATION
-	newMatrix.forward = newMatrix.forward + (targetMatrix.forward-initialMatrix.forward)/ROTATION_DURATION
+	local newMatrix = currentVehicle:getMatrix()
+	newMatrix.up = newMatrix.up + (targetMatrix.up-initialMatrix.up)/DURATION
+	newMatrix.right = newMatrix.right + (targetMatrix.right-initialMatrix.right)/DURATION
+	newMatrix.forward = newMatrix.forward + (targetMatrix.forward-initialMatrix.forward)/DURATION
 	newMatrix.position = Vector3(splineX:get(i),splineY:get(i),splineZ:get(i))
 
 	currentVehicle:setMatrix(newMatrix)
 	i = i+1
-	if i == ROTATION_DURATION then
+	if i == DURATION then
 		removeEventHandler('onClientRender',root,changeRotation)
-		currentVehicle:setCollisionsEnabled(true)
-		setFinalVelocity()
+		--currentVehicle:setCollisionsEnabled(true)
+		currentVehicle:setVelocity(finalVelocity_g)
 		outputDebugString(string.format('Corrected jump %d',getTickCount()),0,200,200,200)
+		DISABLE_LOAD = false
 	end
 end
 
-function setFinalVelocity()
-	currentVehicle:setVelocity(saves[hitShape]['vel'])
-end
+function Vehicle.doAutojump (self,startVelocity,finalRotation,finalPosition,finalVelocity)
+	splineX = Spline(DURATION,
+					self:getPosition():getX(),
+					finalPosition:getX(),
+					startVelocity:getX(),
+					finalVelocity:getX())
 
-function setRotationBlended (vehicle,rotation,position)
+	splineY = Spline(DURATION,
+					self:getPosition():getY(),
+					finalPosition:getY(),
+					startVelocity:getY(),
+					finalVelocity:getY())
 
-	initialMatrix = vehicle.matrix
-	targetMatrix = Matrix(position,rotation)
-	currentVehicle = vehicle
+	splineZ = Spline(DURATION,
+					self:getPosition():getZ(),
+					finalPosition:getZ(),
+					startVelocity:getZ(),
+					finalVelocity:getZ())
+
+	finalVelocity_g = finalVelocity
+	initialMatrix = self.matrix
+	targetMatrix = Matrix(finalPosition,finalRotation)
+	currentVehicle = self
 	i = 0
 	addEventHandler('onClientRender',root,changeRotation)
 end
 
 function loadDataFromFile ()
 
-	autojumps = getElementsByType('autojumpstart',resourceRoot)
+	local autojumps = getElementsByType('autojumpstart',resourceRoot)
 	for i,autojump in ipairs(autojumps) do
 
-		autojumpEnd = getAutojumpEnd(autojump:getData('end'))
+		local autojumpEnd = getAutojumpEnd(autojump:getData('end'))
 
-		if autojumpEnd then
-			cshape = ColShape.Sphere(autojump:getData('posX'),
-										autojump:getData('posY'),
-										autojump:getData('posZ'),
-										COL_SIZE)
-
-			saves[cshape] = {}
-			saves[cshape]['pos'] = Vector3(autojumpEnd:getData('posX'),
-											autojumpEnd:getData('posY'),
-											autojumpEnd:getData('posZ'))
-
-			saves[cshape]['duration'] = tonumber(autojump:getData('duration'))
-			saves[cshape]['precision'] = tonumber(autojump:getData('precision'))
+		-- Check that the autojump is configured
+		if 	autojumpEnd 							and 
+			tonumber(autojump:getData('duration')) 	and
+			tonumber(autojump:getData('precision')) and
+			tonumber(autojump:getData('speed')) 	then
+			-- Also check that is is configued correctly
+			if 	tonumber(autojump:getData('duration')) >= 0.1 	and
+				tonumber(autojump:getData('precision')) >= 0	and
+				tonumber(autojump:getData('precision')) <= 1	and
+				tonumber(autojump:getData('speed'))	>= 0		then -- Should speed < 0 be allowed? Technically yes, but what's the point?
 
 
-			--[[
-			Rotations work differently in objects than in vehicles
-			the editor gives "object" formatted rotation, I need to convert it
-			to "vehicle" rotation using a 'dummy' vehicle
-			]]
+				local cshape = ColShape.Sphere(autojump:getData('posX'),
+											autojump:getData('posY'),
+											autojump:getData('posZ'),
+											COL_SIZE)
 
-			dummyVehicle = Vehicle(411,0,0,0)
-			
-			dummyRotation = Vector3(autojumpEnd:getData('rotX'),
-										autojumpEnd:getData('rotY'),
-										autojumpEnd:getData('rotZ'))
-			
-			dummyRotation_o = Vector3(autojump:getData('rotX'),
-										autojump:getData('rotY'),
-										autojump:getData('rotZ'))
-			
-			-- For some reason oop version of this function seems to ignore 'ZXY' parameter
-			-- 'ZXY' means "interpret this rotation as an object rotation"
-			setElementRotation(dummyVehicle,dummyRotation,'ZXY')
+				saves[cshape] = {}
+				saves[cshape]['pos'] = Vector3(autojumpEnd:getData('posX'),
+												autojumpEnd:getData('posY'),
+												autojumpEnd:getData('posZ'))
 
-			-- Now I get vehicle formatted rotation because I'm getting it from a real vehicle.
-			saves[cshape]['rot'] = dummyVehicle:getRotation()
-			saves[cshape]['vel'] = dummyVehicle.matrix.forward * tonumber(autojump:getData('speed'))
-
-			setElementRotation(dummyVehicle,dummyRotation_o,'ZXY')
-
-			saves[cshape]['orig_rot'] = dummyVehicle:getRotation()
-
-			dummyVehicle:destroy()
+				saves[cshape]['duration'] = tonumber(autojump:getData('duration'))
+				saves[cshape]['precision'] = tonumber(autojump:getData('precision'))
 
 
-			-- Omit jump if invalid parameters are passed
-			if 	(saves[cshape]['duration'] < 0.01) 	or
-				(saves[cshape]['precision'] > 1) 	or
-				(autojump:getData('speed') < 0) 		or
-				(saves[cshape]['precision'] < 0) 	then
+				--[[
+				Rotations work differently in objects than in vehicles
+				the editor gives "object" formatted rotation, I need to convert it
+				to "vehicle" rotation using a 'dummy' vehicle
+				]]
 
-					table.remove(saves,cshape)
-					cshape:destroy()
+				local dummyVehicle = Vehicle(411,0,0,0)
+				
+				local dummyRotation = Vector3(autojumpEnd:getData('rotX'),
+											autojumpEnd:getData('rotY'),
+											autojumpEnd:getData('rotZ'))
+				
+				local dummyRotation_o = Vector3(autojump:getData('rotX'),
+											autojump:getData('rotY'),
+											autojump:getData('rotZ'))
+				
+				-- For some reason oop version of this function seems to ignore 'ZXY' parameter
+				-- 'ZXY' means "interpret this rotation as an object rotation"
+				setElementRotation(dummyVehicle,dummyRotation,'ZXY')
+
+				-- Now I get vehicle formatted rotation because I'm getting it from a real vehicle.
+				saves[cshape]['rot'] = dummyVehicle:getRotation()
+				saves[cshape]['vel'] = dummyVehicle.matrix.forward * tonumber(autojump:getData('speed'))
+
+				setElementRotation(dummyVehicle,dummyRotation_o,'ZXY')
+
+				saves[cshape]['orig_rot'] = dummyVehicle:getRotation()
+
+				dummyVehicle:destroy()
 			end
 		end
 	end
@@ -199,7 +188,7 @@ end
 addEventHandler('onClientResourceStart',resourceRoot,loadDataFromFile)
 
 function getAutojumpEnd(name)
-	autoends = getElementsByType('autojumpend',resourceRoot)
+	local autoends = getElementsByType('autojumpend',resourceRoot)
 	for i,autojump in ipairs(autoends) do
 		if autojump:getData('id') == name then
 			return autojump
