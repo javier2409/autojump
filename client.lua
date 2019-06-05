@@ -187,7 +187,7 @@ function loadDataFromFile ()
 			-- Omit jump if invalid parameters are passed
 			if 	(saves[cshape]['duration'] < 0.01) 	or
 				(saves[cshape]['precision'] > 1) 	or
-				(saves[cshape]['speed'] < 0) 		or
+				(autojump:getData('speed') < 0) 		or
 				(saves[cshape]['precision'] < 0) 	then
 
 					table.remove(saves,cshape)
