@@ -1,8 +1,5 @@
 # Autojump script for MTA:SA
 
-
-**Welcome to the Autojump Github Repository!**
-
 This script allows the creation of scripted vehicle jumps within the map editor itself and including them in your map. The script gets automatically added to your map when you save it so you don't have to copy files or edit your meta.xml.
 
 ## Usage
@@ -26,4 +23,4 @@ This is done automatically when you save your map (**not quick-save**). A messag
 ## Download
 **Important:** The file name must be `autojump.zip`, change it if it's not.
 
-[Download v1.0.1](https://github.com/javier2409/autojump/archive/v1.0.1.zip) 
+[Download v1.0.1](https://github.com/javier2409/autojump/releases/download/v1.0.1/autojump.zip) 
