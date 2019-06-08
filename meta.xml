@@ -1,5 +1,7 @@
 <meta>
 	<info type="misc" name="AutoJump" author="Gus el rikolino" description="Te hace saltar rikolinamente" version="1" edf:definition="editor.edf" />
+	<file src="images/start.png" />
+	<file src="images/end.png" />
 	<script type="server" src="addscript.lua" />
 	<script type="client" src="client.lua" />
 	<oop>true</oop>

@@ -1,5 +1,5 @@
 <def name="Autojumps">
-	<element name="autojumpstart" friendlyname="Autojump Start">
+	<element name="autojumpstart" friendlyname="Autojump Start" icon="images/start.png">
 		<vehicle editorOnly='true' model="!model!" rotation="!rotation!"/>
 		<data name="model" type="vehicleID" default="411" />
 		<data name="position" type="coord3d" default="0,0,0" />
@@ -11,7 +11,7 @@
 		<data name="rot_help" type="selection:true,false" default="false" required='false'/>
 
 	</element>
-	<element name="autojumpend" friendlyname="Autojump End">
+	<element name="autojumpend" friendlyname="Autojump End" icon="images/end.png">
 		<vehicle editorOnly='true' model="!model!" rotation="!rotation!"/>
 		<data name="model" type="vehicleID" default="411" />
 		<data name="position" type="coord3d" default="0,0,0" />
