@@ -71,7 +71,6 @@ function setData(hitShape,dimension)
 
 	if diffRotation >= (2*saves[hitShape]['precision'] - 1)  then
 		--vehicle:setCollisionsEnabled(false) CAUSES CAMERA BUGS
-		
 		if ROTATION_HELP then vehicle:setAngularVelocity(Vector3(0,0,0)) end
 		vehicle:doAutojump(currentVelocity,finalRotation,finalPosition,finalVelocity)
 	else
@@ -95,9 +94,9 @@ function changeRotation ()
 	else
 		currentVehicle:setPosition(Vector3(splineX:get(i),splineY:get(i),splineZ:get(i)))	
 	end
-	if (i == DURATION) or (i > DURATION) then --second condition to avoid infinite loop just in case
 		currentVehicle:setVelocity(Vector3(splineX:get_der(i),splineY:get_der(i),splineZ:get_der(i)))
-		removeEventHandler('onClientHUDRender',root,changeRotation)
+	if (i == DURATION) or (i > DURATION) then --second condition to avoid infinite loop just in case
+		removeEventHandler('onClientRender',root,changeRotation)
 		outputDebugString(string.format('Corrected jump %d',getTickCount()),0,200,200,200)
 		DISABLE_LOAD = false
 	end
@@ -127,7 +126,7 @@ function Vehicle.doAutojump (self,startVelocity,finalRotation,finalPosition,fina
 	targetMatrix = Matrix(finalPosition,finalRotation)
 	currentVehicle = self
 	i = 0
-	addEventHandler('onClientHUDRender',root,changeRotation)
+	addEventHandler('onClientRender',root,changeRotation)
 end
 
 function loadDataFromFile ()
