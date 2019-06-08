@@ -8,7 +8,7 @@ DISABLE_LOAD = false
 saves = {}
 hitShape = nil
 DURATION = nil
-
+ROTATION_HELP = false
 
 function getMatrixFromRot(vec)
 	return Matrix(Vector3(0,0,0),vec)
@@ -25,21 +25,27 @@ function rotDistance (vector1,vector2)
 end
 
 
-function setData(localHitShape,dimension)
+function setData(hitShape,dimension)
 
-	if source ~= localPlayer:getOccupiedVehicle() then
+	outputDebugString('event triggered')
+
+	if source ~= localPlayer then
+		outputDebugString('not localPlayer')
 		return
 	end
 
-	if DISABLE_LOAD then return end
+	if DISABLE_LOAD then 
+		outputDebugString('load disabled')
+		return 
+	end
 
-	if not saves[localHitShape] then
+	if not saves[hitShape] then
+		outputDebugString('no autojump attached to colshape')
 		return
 	end
 
 	DISABLE_LOAD = true
-
-	local hitShape = localHitShape
+	outputDebugString('performing')
 
 	local vehicle = localPlayer:getOccupiedVehicle()
 	local hitPos = Vector3(getElementPosition(hitShape))
@@ -53,6 +59,7 @@ function setData(localHitShape,dimension)
 	local finalPosition = saves[hitShape]['pos']
 
 	DURATION = math.floor(getCurrentFPS()*saves[hitShape]['duration'])
+	ROTATION_HELP = saves[hitShape]['rothelp']
 
 	outputDebugString(string.format('Duration: %d frames',DURATION))
 
@@ -64,59 +71,63 @@ function setData(localHitShape,dimension)
 
 	if diffRotation >= (2*saves[hitShape]['precision'] - 1)  then
 		--vehicle:setCollisionsEnabled(false) CAUSES CAMERA BUGS
-		vehicle:setAngularVelocity(Vector3(0,0,0))
+		
+		if ROTATION_HELP then vehicle:setAngularVelocity(Vector3(0,0,0)) end
 		vehicle:doAutojump(currentVelocity,finalRotation,finalPosition,finalVelocity)
 	else
 		outputDebugString('Not close enough',0,200,200,200)
 	end
 end
-addEventHandler('onClientElementColShapeHit',root,setData)
+addEventHandler('onClientElementColShapeHit',localPlayer,setData)
 
 
 
 function changeRotation ()
-	local newMatrix = currentVehicle:getMatrix()
-	newMatrix.up = newMatrix.up + (targetMatrix.up-initialMatrix.up)/DURATION
-	newMatrix.right = newMatrix.right + (targetMatrix.right-initialMatrix.right)/DURATION
-	newMatrix.forward = newMatrix.forward + (targetMatrix.forward-initialMatrix.forward)/DURATION
-	newMatrix.position = Vector3(splineX:get(i),splineY:get(i),splineZ:get(i))
+	
+	if ROTATION_HELP then
+		local newMatrix = currentVehicle:getMatrix()
+		newMatrix.up = newMatrix.up + (targetMatrix.up - initialMatrix.up)/(DURATION)
+		newMatrix.right = newMatrix.right + (targetMatrix.right - initialMatrix.right)/(DURATION)
+		newMatrix.forward = newMatrix.forward + (targetMatrix.forward - initialMatrix.forward)/(DURATION)
+		newMatrix.position = Vector3(splineX:get(i),splineY:get(i),splineZ:get(i))
 
-	currentVehicle:setMatrix(newMatrix)
-	i = i+1
-	if i == DURATION then
-		removeEventHandler('onClientRender',root,changeRotation)
-		--currentVehicle:setCollisionsEnabled(true)
-		currentVehicle:setVelocity(finalVelocity_g)
+		currentVehicle:setMatrix(newMatrix)
+	else
+		currentVehicle:setPosition(Vector3(splineX:get(i),splineY:get(i),splineZ:get(i)))	
+	end
+	if (i == DURATION) or (i > DURATION) then --second condition to avoid infinite loop just in case
+		currentVehicle:setVelocity(Vector3(splineX:get_der(i),splineY:get_der(i),splineZ:get_der(i)))
+		removeEventHandler('onClientHUDRender',root,changeRotation)
 		outputDebugString(string.format('Corrected jump %d',getTickCount()),0,200,200,200)
 		DISABLE_LOAD = false
 	end
+	i = i+1
 end
 
 function Vehicle.doAutojump (self,startVelocity,finalRotation,finalPosition,finalVelocity)
-	splineX = Spline(DURATION,
-					self:getPosition():getX(),
-					finalPosition:getX(),
-					startVelocity:getX(),
-					finalVelocity:getX())
+	splineX = CubicSpline.new 	(DURATION,
+								self:getPosition():getX(),
+								finalPosition:getX(),
+								startVelocity:getX(),
+								finalVelocity:getX())
 
-	splineY = Spline(DURATION,
-					self:getPosition():getY(),
-					finalPosition:getY(),
-					startVelocity:getY(),
-					finalVelocity:getY())
+	splineY = CubicSpline.new 	(DURATION,
+								self:getPosition():getY(),
+								finalPosition:getY(),
+								startVelocity:getY(),
+								finalVelocity:getY())
 
-	splineZ = Spline(DURATION,
-					self:getPosition():getZ(),
-					finalPosition:getZ(),
-					startVelocity:getZ(),
-					finalVelocity:getZ())
+	splineZ = CubicSpline.new 	(DURATION,
+								self:getPosition():getZ(),
+								finalPosition:getZ(),
+								startVelocity:getZ(),
+								finalVelocity:getZ())
 
-	finalVelocity_g = finalVelocity
 	initialMatrix = self.matrix
 	targetMatrix = Matrix(finalPosition,finalRotation)
 	currentVehicle = self
 	i = 0
-	addEventHandler('onClientRender',root,changeRotation)
+	addEventHandler('onClientHUDRender',root,changeRotation)
 end
 
 function loadDataFromFile ()
@@ -151,6 +162,8 @@ function loadDataFromFile ()
 				saves[cshape]['duration'] = tonumber(autojump:getData('duration'))
 				saves[cshape]['precision'] = tonumber(autojump:getData('precision'))
 
+				if autojump:getData('rot_help') == 'true' then saves[cshape]['rothelp'] = true end
+				if autojump:getData('rot_help') == 'false' then saves[cshape]['rothelp'] = false end
 
 				--[[
 				Rotations work differently in objects than in vehicles
@@ -232,7 +245,11 @@ function CubicSpline:get(x)
   return (a+(b*x)+(c*x*x)+(d*x*x*x))
 end
 
+function CubicSpline:get_der(x)
+  local a = self.p
+  local b = self.r
+  local c = (3*((self.q-self.p)/(self.t*self.t))) - ((self.s+(2*self.r))/self.t)
+  local d = ((self.s+self.r)/(self.t*self.t)) - (2*((self.q-self.p)/(self.t*self.t*self.t)))
 
-function Spline (final,fstart,fend,fdstart,fdend)
-  return CubicSpline.new(final,fstart,fend,fdstart,fdend)
-end
+  return (b+(2*c*x)+(3*d*x*x))
+end	

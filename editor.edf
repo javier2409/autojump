@@ -8,6 +8,8 @@
 		<data name="precision" type="number" default="0" required='false' />
 		<data name="duration" type="number" default="2" required='false'/>
 		<data name="speed" type="number" default="1" required='false'/>
+		<data name="rot_help" type="selection:true,false" default="false" required='false'/>
+
 	</element>
 	<element name="autojumpend" friendlyname="Autojump End">
 		<vehicle editorOnly='true' model="!model!" rotation="!rotation!"/>
