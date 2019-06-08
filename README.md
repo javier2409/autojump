@@ -9,6 +9,7 @@ This script allows the creation of scripted vehicle jumps within the map editor 
 	* `precision`: How accurately the player should make the jump. 0 means the autojump will be performed always, and 1 means the player vehicle rotation should match exactly the autojumpstart rotation.
 	* `speed`: The final speed of the jump (when the player reaches the autojumpend), 1 means full speed.
 	* `duration`: The duration of the jump in seconds (2 works fine mostly).
+	* `rot_help`: Set to _true_ if you want the script to slightly help rotating the vehicle during the jump.
 	* **Don't forget to configure the autojumpend that corresponds to this autojumpstart**
 	
 ### Parameter values:
@@ -23,4 +24,4 @@ This is done automatically when you save your map (**not quick-save**). A messag
 ## Download
 **Important:** The file name must be `autojump.zip`, change it if it's not.
 
-[Download v1.0.1](https://github.com/javier2409/autojump/releases/download/v1.0.1/autojump.zip) 
+[Download v1.1.0](https://github.com/javier2409/autojump/releases/download/v1.1.0/autojump.zip) 
