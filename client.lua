@@ -62,7 +62,10 @@ function setData(hitShape,dimension)
 	local finalRotation = saves[hitShape]['rot']
 	local finalPosition = saves[hitShape]['pos']
 
-	DURATION = math.floor(getCurrentFPS()*saves[hitShape]['duration'])
+	DURATION = math.floor(getCurrentFPS()*saves[hitShape]['duration']*(1/getGameSpeed()))
+	if DURATION < 0.01 then
+		DURATION = 0.01
+	end
 	ROTATION_HELP = saves[hitShape]['rothelp']
 
 	outputDebugString(string.format('Duration: %d frames',DURATION))
