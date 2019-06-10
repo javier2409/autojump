@@ -86,7 +86,7 @@ function addScriptToMap()
 
 	-- if the script is already there, notify that it was updated and finish
 	if findNode(meta,'script','autojump.lua') then
-		outputChatBox(string.format('%sAutojump: Script updated successfully on %s',successcolor,g_MapName),root,0,0,0,true)
+		outputChatBox(string.format('%sAutojump: Sucessfully updated autojumps on %s',successcolor,g_MapName),root,0,0,0,true)
 
 		copyAutojumpElementsToMap(mapFile,g_MapName,meta)
 	--copyAutojumpElementsToMap(mapFile,'editor_test',editorMeta) This is map editor's job
@@ -126,18 +126,10 @@ function addScriptToMap()
 
 	outputChatBox(string.format('%sAutojump: Sucessfully added autojump script to map: %s',successcolor,g_MapName),root,0,0,0,true)
 end
-
-function filter_addScriptToMap (value)
-	if not updated then
-		outputChatBox(failurecolor..'Autojump: Autojumps may not be updated, save map before testing.',root,0,0,0,true)
-	end
-end
-addEventHandler('testResource',root,filter_addScriptToMap)
-
 function waitTime ()
 
 	if (not g_MapName) then -- if never full-saved
-		outputChatBox(string.format('%sAutojump: Could not add script to map, please do full-save first',failurecolor),root,0,0,0,true)
+		outputChatBox(string.format('%sAutojump: Could not add/update script on map, please do full-save or reopen map first',failurecolor),root,0,0,0,true)
 		killTimer(waitTimer)
 		return
 	end
@@ -227,7 +219,16 @@ function getAutojumpNodesFromMap (mapFile)
 	return autojumpNodes
 end
 
+--[[
+function filter_addScriptToMap (value)
+	if not updated then
+		outputChatBox(successcolor..'Autojump: Autojumps may be outdated.',root,0,0,0,true)
+	end
+end
+addEventHandler('testResource',root,filter_addScriptToMap)
+]]
 -- this ivalidates save when you modify autojumps, to warn you if you don't save before testing
+--[[
 function invalidate ()
 	local etype = source:getType()
 	if ((etype ~= 'autojumpstart') and (etype ~= 'autojumpend')) then return end
@@ -241,3 +242,4 @@ addEventHandler('onElementSelect',root,invalidate)
 addEventHandler('onElementDestroy_undoredo',root,invalidate)
 addEventHandler('onElementCreate_undoredo',root,invalidate)
 addEventHandler('onElementMove_undoredo',root,invalidate)
+]]
