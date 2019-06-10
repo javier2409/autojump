@@ -1,13 +1,4 @@
-function addScriptToMap(mapname)
-	if mapname then --mapname is defined only on full-save
-		g_MapName = mapname
-	end
-
-	if (not g_MapName) then -- if never full-saved
-		outputChatBox('Could not add script to map, please do full-save first')
-		return
-	end
-
+function addScriptToMap()
 
 	-- Just in case, map name should be defined at this point with a valid one
 	map = Resource.getFromName(g_MapName)
@@ -77,6 +68,12 @@ function addScriptToMap(mapname)
 end
 
 function waitTime ()
+	if (not g_MapName) then -- if never full-saved
+		outputChatBox('Could not add script to map, please do full-save first')
+		killTimer(waitTimer)
+		return
+	end
+
 	meta = XML.load(string.format(':%s/meta.xml',g_MapName))
 	b = meta:findChild('map',0)
 	meta:unload()	
@@ -89,8 +86,10 @@ end
 
 function setWaitTime(mapName)
 	g_MapName = mapName
-	outputChatBox('Autojump: Waiting for map to be saved')
 	waitTimer = setTimer(waitTime,100,0)
 end
+function setWaitTime_quicksave()
+	waitTimer = setTimer(waitTime,100,0)	
+end
 addEventHandler('saveResource',root,setWaitTime)
-addEventHandler('quickSaveResource',root,setWaitTime)
+addEventHandler('quickSaveResource',root,setWaitTime_quicksave)
