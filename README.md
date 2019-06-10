@@ -24,4 +24,4 @@ This is done automatically when you save your map (**not quick-save**). A messag
 ## Download
 **Important:** The file name must be `autojump.zip`, change it if it's not.
 
-[Download v1.1.0](https://github.com/javier2409/autojump/releases/download/v1.1.0/autojump.zip) 
+[Download v1.1.1](https://github.com/javier2409/autojump/releases/download/v1.1.1/autojump.zip) 
