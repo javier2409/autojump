@@ -14,6 +14,14 @@ local attributes = {}
 attributes['autojumpstart'] = {'id','rot_help','speed','precision','duration','model','end','posX','posY','posZ','rotX','rotY','rotZ'}
 attributes['autojumpend'] = {'id','model','posX','posY','posZ','rotX','rotY','rotZ'}
 
+
+if getThisResource():getName() == 'editor_test' then
+	element_types = {'autojumpstart','autojumpend'}
+else
+	element_types = {'autojumpstartX','autojumpendX'}
+end
+
+
 function getMatrixFromRot(vec)
 	return Matrix(Vector3(0,0,0),vec)
 end
@@ -152,7 +160,7 @@ function loadDataFromFile ()
 
 	createAutojumpElements()
 
-	local autojumps = getElementsByType('autojumpstartX',resourceRoot)
+	local autojumps = getElementsByType(element_types[1],resourceRoot)
 	for i,autojump in ipairs(autojumps) do
 
 		local autojumpEnd = getAutojumpEnd(autojump:getData('end'))
@@ -221,7 +229,7 @@ end
 addEventHandler('onClientResourceStart',resourceRoot,loadDataFromFile)
 
 function getAutojumpEnd(name)
-	local autoends = getElementsByType('autojumpendX',resourceRoot)
+	local autoends = getElementsByType(element_types[2],resourceRoot)
 	for i,autojump in ipairs(autoends) do
 		if autojump:getData('id') == name then
 			return autojump
