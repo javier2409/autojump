@@ -75,5 +75,22 @@ function addScriptToMap(mapname)
 
 	outputChatBox(string.format('Sucessfully added autojump script to map: %s',g_MapName))
 end
-addEventHandler('saveResource',root,addScriptToMap)
-addEventHandler('quickSaveResource',root,addScriptToMap)
+
+function waitTime ()
+	meta = XML.load(string.format(':%s/meta.xml',g_MapName))
+	b = meta:findChild('map',0)
+	meta:unload()	
+
+	if b then
+		addScriptToMap()
+		killTimer(waitTimer)
+	end
+end
+
+function setWaitTime(mapName)
+	g_MapName = mapName
+	outputChatBox('Autojump: Waiting for map to be saved')
+	waitTimer = setTimer(waitTime,100,0)
+end
+addEventHandler('saveResource',root,setWaitTime)
+addEventHandler('quickSaveResource',root,setWaitTime)
