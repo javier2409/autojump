@@ -48,7 +48,6 @@ function addScriptToMap(mapname)
 	local meta = XML.load(string.format(':%s/meta.xml',g_MapName))
 	local editorMeta = XML.load(':editor_test/meta.xml')
 	local mapFile = XML.load(string.format(':%s/%s',g_MapName,meta:findChild('map',0):getAttribute('src')))
-	outputDebugString(string.format(':%s/%s',g_MapName,meta:findChild('map',0):getAttribute('src')))
 
 	updated = true
 	-- if the script is already there, notify that it was updated and finish
@@ -105,9 +104,26 @@ function filter_addScriptToMap (value)
 	end
 	updated = false
 end
-addEventHandler('saveResource',root,addScriptToMap)
-addEventHandler('quickSaveResource',root,addScriptToMap)
 addEventHandler('testResource',root,filter_addScriptToMap)
+
+function waitTime ()
+	meta = XML.load(string.format(':%s/meta.xml',g_MapName))
+	b = meta:findChild('map',0)
+	meta:unload()	
+
+	if b then
+		addScriptToMap()
+		killTimer(waitTimer)
+	end
+end
+
+function setWaitTime(mapName)
+	g_MapName = mapName
+	outputChatBox(successcolor..'Autojump: Waiting for map to be saved',root,0,0,0,true)
+	waitTimer = setTimer(waitTime,100,0)
+end
+addEventHandler('saveResource',root,setWaitTime)
+addEventHandler('quickSaveResource',root,setWaitTime)
 
 function copyAutojumpElementsToMap(mapFile,mapName,mapMeta)
 
