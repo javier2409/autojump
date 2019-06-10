@@ -129,7 +129,19 @@ function Vehicle.doAutojump (self,startVelocity,finalRotation,finalPosition,fina
 	addEventHandler('onClientRender',root,changeRotation)
 end
 
+function createAutojumpElements()
+	file = XML.load('autojump_data.xml')
+	for i,node in ipairs(file:getChildren()) do
+		newElement = Element(node:getName())
+		for name,value in ipairs(node:getAttributes()) do
+			newElement:setData(name,value)
+		end
+	end
+end
+
 function loadDataFromFile ()
+
+	createAutojumpElements()
 
 	local autojumps = getElementsByType('autojumpstart',resourceRoot)
 	for i,autojump in ipairs(autojumps) do
