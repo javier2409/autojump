@@ -1,5 +1,5 @@
-successcolor = '#00ff00'
-failurecolor = '#ff0000'
+successcolor = '#49d154'
+failurecolor = '#d14b49'
 
 function updateMapName(map)
 	g_MapName = map:getName()
@@ -59,7 +59,7 @@ function addScriptToMap(mapname)
 				outputChatBox(string.format('%sAutojump: Script updated successfully on %s',successcolor,g_MapName),root,0,0,0,true)
 
 				copyAutojumpElementsToMap(mapFile,g_MapName,meta)
-				--copyAutojumpElementsToMap(mapFile,'editor_test',editorMeta)
+				--copyAutojumpElementsToMap(mapFile,'editor_test',editorMeta) This is map editor's job
 
 				editorMeta:saveFile()
 				editorMeta:unload()
@@ -87,7 +87,7 @@ function addScriptToMap(mapname)
 	end
 
 	copyAutojumpElementsToMap(mapFile,g_MapName,meta)
-	--copyAutojumpElementsToMap(mapFile,'editor_test',editorMeta)
+	--copyAutojumpElementsToMap(mapFile,'editor_test',editorMeta) This is map editor's job
 
 	meta:saveFile()
 	meta:unload()
@@ -115,6 +115,8 @@ function copyAutojumpElementsToMap(mapFile,mapName,mapMeta)
 	attributes['autojumpstart'] = {'id','rot_help','speed','precision','duration','model','end','posX','posY','posZ','rotX','rotY','rotZ'}
 	attributes['autojumpend'] = {'id','model','posX','posY','posZ','rotX','rotY','rotZ'}
 
+
+	-- check if map's meta already has autojump_data.xml
 	local found = false
 	outputDebugString(string.format(':%s/autojump_data.xml',mapName))
 	local metaNodes = mapMeta:getChildren()
@@ -126,13 +128,14 @@ function copyAutojumpElementsToMap(mapFile,mapName,mapMeta)
 		end
 	end
 
+	-- if it doesn't, add it
 	if (not found) then
 		local child = mapMeta:createChild('file')
 		child:setAttribute('src','autojump_data.xml')
 		child:setAttribute('type','client')
 	end
 
-
+	-- gather autojump data from map
 	local autojumpNodes = {}
 
 	local mapNodes = mapFile:getChildren()
@@ -147,6 +150,8 @@ function copyAutojumpElementsToMap(mapFile,mapName,mapMeta)
 		end
 	end
 
+
+	-- copy data to autojump_data.xml and add it to map 
 	local newFile = XML.load(string.format(':%s/autojump_data.xml',mapName))
 	if (newFile) then
 		newFile:destroy()
@@ -169,14 +174,17 @@ function copyAutojumpElementsToMap(mapFile,mapName,mapMeta)
 
 end
 
+
+-- this ivalidates save when you modify autojumps, to warn you if you don't save before testing
 function invalidate ()
 	local etype = source:getType()
 	if ((etype ~= 'autojumpstart') and (etype ~= 'autojumpend')) then return end
 	updated = false
-	outputDebugString('invalidated save')
+	outputDebugString('Autojump: invalidated save '..getTickCount())
 end
 addEventHandler('onElementDestroy',root,invalidate)
 addEventHandler('onElementCreate',root,invalidate)
+addEventHandler('onElementDrop',root,invalidate)
 addEventHandler('onElementSelect',root,invalidate)
 addEventHandler('onElementDestroy_undoredo',root,invalidate)
 addEventHandler('onElementCreate_undoredo',root,invalidate)
