@@ -1,10 +1,18 @@
+successcolor = '#00ff00'
+failurecolor = '#ff0000'
+
+function updateMapName(map)
+	g_MapName = map:getName()
+end
+addEventHandler('onMapOpened',root,updateMapName)
+
 function addScriptToMap(mapname)
 	if mapname then --mapname is defined only on full-save
 		g_MapName = mapname
 	end
 
 	if (not g_MapName) then -- if never full-saved
-		outputChatBox('Could not add script to map, please do full-save first')
+		outputChatBox(string.format('%sAutojump: Could not add script to map, please do full-save first',failurecolor),root,0,0,0,true)
 		return
 	end
 
@@ -12,7 +20,7 @@ function addScriptToMap(mapname)
 	-- Just in case, map name should be defined at this point with a valid one
 	map = Resource.getFromName(g_MapName)
 	if not map then
-		outputChatBox(string.format('There is no map with name: %s',g_MapName))
+		outputChatBox(string.format('%sAutojump: There is no map with name: %s',failurecolor,g_MapName),root,0,0,0,true)
 		return
 	end
 
@@ -22,13 +30,13 @@ function addScriptToMap(mapname)
 	local admingroup = ACLGroup.get('MapEditor')
 	local requiredobject = string.format('resource.%s',thisresourcename)
 	if not admingroup:doesContainObject(requiredobject) then
-		outputChatBox(string.format("Resource '%s' does not have MapEditor rights, autojump files could not be copied",thisresourcename))
+		outputChatBox(string.format("%sAutojump: Resource '%s' does not have MapEditor rights, autojump files could not be copied. Hint: don't do /start autojump, just add the definition in your map",failurecolor,thisresourcename),root,0,0,0,true)
 		return
 	end
 
 	-- check autojump script exists
 	if not Resource.getFromName('autojump') then
-		outputChatBox('Resource name must be "autojump", do not change it!')
+		outputChatBox(string.format('Autojump: Resource name must be "autojump", do not change it!',failurecolor),root,0,0,0,true)
 		return
 	end
 
@@ -41,17 +49,20 @@ function addScriptToMap(mapname)
 	local editorMeta = XML.load(':editor_test/meta.xml')
 	local mapFile = XML.load(string.format(':%s/%s',g_MapName,meta:findChild('map',0):getAttribute('src')))
 	outputDebugString(string.format(':%s/%s',g_MapName,meta:findChild('map',0):getAttribute('src')))
+
+	updated = true
 	-- if the script is already there, notify that it was updated and finish
 	local metaNodes = meta:getChildren()
 	for i,node in ipairs(metaNodes) do
 		if node:getName() == 'script' then
 			if node:getAttribute('src') == 'autojump.lua' then
-				outputChatBox(string.format('Script updated successfully on %s',g_MapName))
-				editorMeta:saveFile()
-				editorMeta:unload()
+				outputChatBox(string.format('%sAutojump: Script updated successfully on %s',successcolor,g_MapName),root,0,0,0,true)
 
 				copyAutojumpElementsToMap(mapFile,g_MapName,meta)
+				--copyAutojumpElementsToMap(mapFile,'editor_test',editorMeta)
 
+				editorMeta:saveFile()
+				editorMeta:unload()
 				mapFile:unload()
 				meta:saveFile()
 				meta:unload()
@@ -76,6 +87,7 @@ function addScriptToMap(mapname)
 	end
 
 	copyAutojumpElementsToMap(mapFile,g_MapName,meta)
+	--copyAutojumpElementsToMap(mapFile,'editor_test',editorMeta)
 
 	meta:saveFile()
 	meta:unload()
@@ -84,11 +96,14 @@ function addScriptToMap(mapname)
 	mapFile:unload()
 
 
-	outputChatBox(string.format('Sucessfully added autojump script to map: %s',g_MapName))
+	outputChatBox(string.format('%sAutojump: Sucessfully added autojump script to map: %s',successcolor,g_MapName),root,0,0,0,true)
 end
 
 function filter_addScriptToMap (value)
-	addScriptToMap()
+	if not updated then
+		outputChatBox(failurecolor..'Autojump: Autojumps in map are not updated, save map before testing.',root,0,0,0,true)
+	end
+	updated = false
 end
 addEventHandler('saveResource',root,addScriptToMap)
 addEventHandler('quickSaveResource',root,addScriptToMap)
@@ -115,7 +130,6 @@ function copyAutojumpElementsToMap(mapFile,mapName,mapMeta)
 		local child = mapMeta:createChild('file')
 		child:setAttribute('src','autojump_data.xml')
 		child:setAttribute('type','client')
-		outputDebugString('ADDING')
 	end
 
 
@@ -129,7 +143,6 @@ function copyAutojumpElementsToMap(mapFile,mapName,mapMeta)
 			for i,name in ipairs(attributes[node:getName()]) do
 				a[name] = node:getAttribute(name)
 			end
-			outputDebugString(a['id'])
 			table.insert(autojumpNodes,a)
 		end
 	end
@@ -141,13 +154,11 @@ function copyAutojumpElementsToMap(mapFile,mapName,mapMeta)
 	end
 	newFile = XML(string.format(':%s/autojump_data.xml',mapName),'autojumps')
 
-	outputDebugString(#autojumpNodes)
 	for i,nodedata in ipairs(autojumpNodes) do
 		nodename = nodedata['element_name']
 		nodedata['element_name'] = nil
 		newNode = newFile:createChild(nodename)
 		for i,name in ipairs(attributes[nodename]) do
-			outputDebugString('newfile_save')
 			newNode:setAttribute(name,nodedata[name])
 		end
 	end
@@ -157,3 +168,16 @@ function copyAutojumpElementsToMap(mapFile,mapName,mapMeta)
 
 
 end
+
+function invalidate ()
+	local etype = source:getType()
+	if ((etype ~= 'autojumpstart') and (etype ~= 'autojumpend')) then return end
+	updated = false
+	outputDebugString('invalidated save')
+end
+addEventHandler('onElementDestroy',root,invalidate)
+addEventHandler('onElementCreate',root,invalidate)
+addEventHandler('onElementSelect',root,invalidate)
+addEventHandler('onElementDestroy_undoredo',root,invalidate)
+addEventHandler('onElementCreate_undoredo',root,invalidate)
+addEventHandler('onElementMove_undoredo',root,invalidate)

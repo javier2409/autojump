@@ -6,9 +6,13 @@ COL_SIZE = 1.6
 
 DISABLE_LOAD = false
 saves = {}
+autojumps = {}
 hitShape = nil
 DURATION = nil
 ROTATION_HELP = false
+local attributes = {}
+attributes['autojumpstart'] = {'id','rot_help','speed','precision','duration','model','end','posX','posY','posZ','rotX','rotY','rotZ'}
+attributes['autojumpend'] = {'id','model','posX','posY','posZ','rotX','rotY','rotZ'}
 
 function getMatrixFromRot(vec)
 	return Matrix(Vector3(0,0,0),vec)
@@ -132,18 +136,20 @@ end
 function createAutojumpElements()
 	file = XML.load('autojump_data.xml')
 	for i,node in ipairs(file:getChildren()) do
-		newElement = Element(node:getName())
-		for name,value in ipairs(node:getAttributes()) do
-			newElement:setData(name,value)
+		newElement = Element(node:getName().."X")
+		for i,name in ipairs(attributes[node:getName()]) do
+			newElement:setData(name,node:getAttribute(name))
 		end
+		table.insert(autojumps,newElement)
 	end
+	file:unload()
 end
 
 function loadDataFromFile ()
 
 	createAutojumpElements()
 
-	local autojumps = getElementsByType('autojumpstart',resourceRoot)
+	local autojumps = getElementsByType('autojumpstartX',resourceRoot)
 	for i,autojump in ipairs(autojumps) do
 
 		local autojumpEnd = getAutojumpEnd(autojump:getData('end'))
@@ -212,7 +218,7 @@ end
 addEventHandler('onClientResourceStart',resourceRoot,loadDataFromFile)
 
 function getAutojumpEnd(name)
-	local autoends = getElementsByType('autojumpend',resourceRoot)
+	local autoends = getElementsByType('autojumpendX',resourceRoot)
 	for i,autojump in ipairs(autoends) do
 		if autojump:getData('id') == name then
 			return autojump
